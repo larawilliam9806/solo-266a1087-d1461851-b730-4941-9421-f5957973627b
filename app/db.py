@@ -44,9 +44,14 @@ CREATE TABLE IF NOT EXISTS work_order_parts (
 
 
 def connect(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path, timeout=10, check_same_thread=False)
+    # isolation_level=None：使用 autocommit，事务边界由 service 显式
+    # BEGIN [IMMEDIATE] / COMMIT / ROLLBACK 控制，保证展开快照与
+    # 入账前的并发校验在各 Python 版本下行为一致。
+    conn = sqlite3.connect(
+        db_path, timeout=10, check_same_thread=False, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
 
 
